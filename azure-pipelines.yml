@@ -7,35 +7,31 @@ trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
-
-name: $(date:yyyy).$(Month)$(rev:.r)
+  vmImage: 'macOS-10.14'
 
 steps:
-
-- script: yarn install
-
 - task: Gradle@2
   inputs:
-    gradleWrapperFile: 'android/gradlew'
-    workingDirectory: 'android/'
-    options: '-PversionName=$(Build.BuildNumber) -PversionCode=$(Build.BuildId)'
-    tasks: 'assembleRelease'
-    publishJUnitResults: false
-    javaHomeOption: 'JDKVersion'
+    workingDirectory: ''
+    gradleWrapperFile: 'gradlew'
     gradleOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/TEST-*.xml'
+    tasks: 'assembleDebug test'
+  displayName: gradlew assembleDebug test
 
-- task: AndroidSigning@3
+- task: CopyFiles@2
   inputs:
-    apkFiles: '**/*.apk'
-    apksignerKeystoreFile: 'my-upload-key.keystore'
-    apksignerKeystorePassword: '$(KeyStorePassword)'
-    apksignerKeystoreAlias: '$(KeyAlias)'
-    apksignerKeyPassword: '$(KeyPassword)'
-    zipalign: false
+    contents: '**/*.apk'
+    targetFolder: '$(build.artifactStagingDirectory)'
+  displayName: Copy .apk files to artifact staging directory
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: 'android/app/build/outputs/apk/release'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+    pathToPublish: '$(build.artifactStagingDirectory)'
+    artifactName: 'drop'
+    artifactType: 'container'
+  displayName: Publish artifacts
